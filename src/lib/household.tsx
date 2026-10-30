@@ -78,7 +78,7 @@ export interface Member {
   user_id: string
   display_name: string
   role: string
-  greeting_title: string
+  greeting_title: string | null
   greeting_audio_path: string | null
   greeting_pitch_up: boolean
 }

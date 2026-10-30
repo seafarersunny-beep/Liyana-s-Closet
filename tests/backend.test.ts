@@ -319,7 +319,7 @@ describe.skipIf(!run)('household backend', () => {
     ok(await smita.c.from('household_members').update({ greeting_audio_path: path }).eq('user_id', sunny.id))
     const row = ok(await sunny.c.from('household_members').select('greeting_audio_path, greeting_title').eq('user_id', sunny.id).single()) as any
     expect(row.greeting_audio_path).toBe(path)
-    expect(row.greeting_title).toBe('Baba')
+    expect(row.greeting_title).toBeNull()
     expect((await outsider.c.storage.from('household-audio').createSignedUrl(path, 60)).error).toBeTruthy()
     const outsiderEdit = await outsider.c.from('household_members').update({ greeting_audio_path: null }).eq('user_id', sunny.id).select()
     expect(outsiderEdit.data ?? []).toHaveLength(0)

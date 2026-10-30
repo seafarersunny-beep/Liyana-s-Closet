@@ -1,15 +1,19 @@
 import { getPrefs } from './prefs'
 
 // Liyana's greeting. Real audio only: a clip a parent recorded, or the phone's
-// own Bangla text-to-speech voice if it has one. Browsers (iOS especially)
+// own English text-to-speech voice, pitched up to sound like a tiny girl. Browsers (iOS especially)
 // only allow sound after a tap, so callers must invoke this from a tap.
-
-const BN_TITLES: Record<string, string> = { baba: 'বাবা', ma: 'মা', abbu: 'আব্বু', amma: 'আম্মা', papa: 'পাপা', mama: 'মামা' }
 
 export interface Greeting {
   title: string
   audioUrl: string | null
   pitchUp: boolean
+}
+
+// Until a parent picks a name, the parent who started the household is "Baba"
+// and the invited parent is "Ammu".
+export function titleFor(m: { greeting_title: string | null; role: string } | undefined) {
+  return m?.greeting_title ?? (m && m.role !== 'owner' ? 'Ammu' : 'Baba')
 }
 
 let current: Greeting = { title: 'Baba', audioUrl: null, pitchUp: true }
@@ -21,17 +25,15 @@ export function getGreeting() {
 }
 
 export function greetingText(title = current.title) {
-  const bn = BN_TITLES[title.trim().toLowerCase()] ?? title
-  return {
-    bangla: `হ্যালো ${bn}, আমি তোমার ছোট্ট লিয়ানা, আর আমি তোমাকে ভালোবাসি`,
-    roman: `Hello ${title}, ami tomar chotto Liyana, r ami tomake valobashi`,
-  }
+  return `Hello ${title}! I’m your little Liyana, and I love you so much!`
 }
 
-export function banglaVoice(): SpeechSynthesisVoice | null {
+// The sweetest English voice this phone has: a female voice if one is installed.
+const SWEET = /samantha|ava|allison|susan|karen|moira|tessa|fiona|serena|zira|female|google us english/i
+export function englishVoice(): SpeechSynthesisVoice | null {
   if (!('speechSynthesis' in window)) return null
-  const voices = window.speechSynthesis.getVoices()
-  return voices.find((v) => v.lang.toLowerCase().startsWith('bn')) ?? null
+  const en = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith('en'))
+  return en.find((v) => SWEET.test(v.name) && v.lang.toLowerCase().startsWith('en-us')) ?? en.find((v) => SWEET.test(v.name)) ?? en[0] ?? null
 }
 // Some browsers load voices late.
 if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => undefined
@@ -62,13 +64,14 @@ export async function speakGreeting(g: Greeting = current): Promise<SpeakResult>
       return 'blocked'
     }
   }
-  const voice = banglaVoice()
+  const voice = englishVoice()
   if (!voice) return 'no-voice'
-  const u = new SpeechSynthesisUtterance(greetingText(g.title).bangla)
+  const u = new SpeechSynthesisUtterance(greetingText(g.title))
   u.voice = voice
   u.lang = voice.lang
-  u.pitch = 1.6
-  u.rate = 0.95
+  u.pitch = 1.9 // tiny and sweet
+  u.rate = 1.08 // a little excited
+  u.volume = 1
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(u)
   busyUntil = performance.now() + 1500

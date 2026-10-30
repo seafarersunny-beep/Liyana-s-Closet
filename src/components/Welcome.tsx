@@ -53,9 +53,8 @@ export function Welcome({ name, greeting, onDone }: { name: string; greeting: Gr
       <div className="welcome-mascot">
         <Mascot size={210} mood={spoken ? 'happy' : undefined} tappable={false} />
       </div>
-      <div className={`speech ${spoken ? 'show' : ''}`} lang="bn">
-        <p className="speech-bn">{text.bangla}</p>
-        <p className="speech-roman">{text.roman}</p>
+      <div className={`speech ${spoken ? 'show' : ''}`}>
+        <p className="speech-bn">{text}</p>
       </div>
       {!spoken ? (
         <button className="btn primary big welcome-btn" onClick={(e) => { e.stopPropagation(); void hello() }}>
@@ -63,7 +62,7 @@ export function Welcome({ name, greeting, onDone }: { name: string; greeting: Gr
         </button>
       ) : (
         <>
-          {result === 'no-voice' && <p className="welcome-note">No voice yet. Record Liyana’s greeting in Settings and it will play here on both phones.</p>}
+          {result === 'no-voice' && <p className="welcome-note">This phone has no voice installed. Record Liyana’s greeting in Settings and it will play here.</p>}
           {result === 'muted' && <p className="welcome-note">Sound is off. Turn on gentle sounds in Settings to hear her.</p>}
           {result === 'blocked' && <p className="welcome-note">The greeting couldn’t play on this phone. Check the ringer switch and volume.</p>}
           <button className="btn primary big welcome-btn" onClick={(e) => { e.stopPropagation(); finish() }}>Open {name}’s Closet</button>

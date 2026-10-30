@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase, friendlyError } from '../lib/supabase'
 import { useData, useHousehold, type Member } from '../lib/household'
-import { banglaVoice, greetingText, speakGreeting } from '../lib/voice'
+import { englishVoice, greetingText, speakGreeting, titleFor } from '../lib/voice'
 import { emit } from '../lib/events'
 import { ErrorNote } from './ui'
 
-const TITLES = ['Baba', 'Ma', 'Abbu', 'Amma']
+const TITLES = ['Baba', 'Ammu', 'Mama', 'Papa', 'Abbu', 'Amma']
 const MAX_SECONDS = 15
 
 function pickMime() {
@@ -23,7 +23,8 @@ function MemberGreeting({ member, isMe }: { member: Member; isMe: boolean }) {
   const rec = useRef<MediaRecorder | null>(null)
   const timer = useRef<number | undefined>(undefined)
   const url = greetingUrls[member.user_id] ?? null
-  const text = greetingText(member.greeting_title)
+  const title = titleFor(member)
+  const text = greetingText(title)
 
   useEffect(() => () => window.clearInterval(timer.current), [])
 
@@ -101,14 +102,14 @@ function MemberGreeting({ member, isMe }: { member: Member; isMe: boolean }) {
       <div className="greet-head">
         <strong>{member.display_name}{isMe ? ' (you)' : ''}</strong>
         {isMe ? (
-          <select value={member.greeting_title} onChange={(e) => save({ greeting_title: e.target.value }, 'Saved').catch((err) => setError(friendlyError(err)))} aria-label="What Liyana calls you">
-            {[...new Set([...TITLES, member.greeting_title])].map((t) => <option key={t} value={t}>Liyana calls me {t}</option>)}
+          <select value={title} onChange={(e) => save({ greeting_title: e.target.value }, 'Saved').catch((err) => setError(friendlyError(err)))} aria-label="What Liyana calls you">
+            {[...new Set([...TITLES, title])].map((t) => <option key={t} value={t}>Liyana calls me {t}</option>)}
           </select>
         ) : (
-          <span className="sub">Liyana calls them {member.greeting_title}</span>
+          <span className="sub">Liyana calls them {title}</span>
         )}
       </div>
-      <p className="greet-line" lang="bn">“{text.bangla}”</p>
+      <p className="greet-line">“{text}”</p>
       <div className="greet-actions">
         {recording ? (
           <button className="btn danger" onClick={() => rec.current?.stop()}>■ Stop ({MAX_SECONDS - seconds}s)</button>
@@ -116,7 +117,7 @@ function MemberGreeting({ member, isMe }: { member: Member; isMe: boolean }) {
           <button className="btn soft" onClick={start} disabled={busy}>● {url ? 'Record again' : 'Record greeting'}</button>
         )}
         {url && !recording && (
-          <button className="btn soft" onClick={() => speakGreeting({ title: member.greeting_title, audioUrl: url, pitchUp: member.greeting_pitch_up })}>▶ Play</button>
+          <button className="btn soft" onClick={() => speakGreeting({ title, audioUrl: url, pitchUp: member.greeting_pitch_up })}>▶ Play</button>
         )}
         <label className="btn ghost small upload-audio">
           Upload audio
@@ -148,9 +149,9 @@ export function GreetingSettings() {
       return true
     }
   })
-  const [hasVoice, setHasVoice] = useState(() => !!banglaVoice())
+  const [hasVoice, setHasVoice] = useState(() => !!englishVoice())
   useEffect(() => {
-    const t = window.setTimeout(() => setHasVoice(!!banglaVoice()), 800)
+    const t = window.setTimeout(() => setHasVoice(!!englishVoice()), 800)
     return () => window.clearTimeout(t)
   }, [])
 
@@ -167,9 +168,9 @@ export function GreetingSettings() {
     <div className="card form">
       <strong>Liyana’s greeting</strong>
       <p className="calc">
-        Each time the app opens, Liyana says hello in Bangla after your first tap (iPhones don’t allow sound before a tap). Tap her anytime to hear it again.
-        Record a voice for each parent, for example Smita records what Sunny hears. Recordings sync to both phones.
-        {hasVoice ? ' Until one is recorded, this phone’s Bangla voice reads it.' : ' This phone has no Bangla text-to-speech voice, so Liyana stays quiet until a greeting is recorded.'}
+        Each time the app opens, Liyana says a sweet hello in English after your first tap (iPhones don’t allow sound before a tap). Tap her anytime to hear it again.
+        Liyana says “Hello Baba!” to the parent who started the household and “Hello Ammu!” to the other. You can also record a real voice for each parent (for example Bangla), and it plays instead. Recordings sync to both phones.
+        {hasVoice ? ' Until one is recorded, this phone’s English voice says it in a tiny, sweet pitch.' : ' This phone has no English voice installed, so Liyana stays quiet until a greeting is recorded.'}
       </p>
       <label className="toggle"><input type="checkbox" checked={greetOn} onChange={(e) => toggle(e.target.checked)} /><span>Greet me when the app opens (this phone)</span></label>
       {members.map((m) => <MemberGreeting key={m.user_id} member={m} isMe={m.user_id === session?.user.id} />)}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { HouseholdProvider, useData, useHousehold } from './lib/household'
-import { setGreeting, type Greeting } from './lib/voice'
+import { setGreeting, titleFor, type Greeting } from './lib/voice'
 import { Welcome, shouldGreet } from './components/Welcome'
 import { backendConfigured } from './lib/supabase'
 import { emit } from './lib/events'
@@ -75,7 +75,7 @@ function useMyGreeting(): Greeting {
   const { members, greetingUrls } = useData()
   const { session } = useHousehold()
   const me = members.find((m) => m.user_id === session?.user.id)
-  const title = me?.greeting_title ?? 'Baba'
+  const title = titleFor(me)
   const audioUrl = (me && greetingUrls[me.user_id]) ?? null
   const pitchUp = me?.greeting_pitch_up ?? true
   const g = useMemo(() => ({ title, audioUrl, pitchUp }), [title, audioUrl, pitchUp])
