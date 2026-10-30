@@ -78,6 +78,9 @@ export interface Member {
   user_id: string
   display_name: string
   role: string
+  greeting_title: string
+  greeting_audio_path: string | null
+  greeting_pitch_up: boolean
 }
 
 export interface Household {
@@ -121,6 +124,7 @@ export interface Snapshot {
   summary: Summary
   estimates: Estimate[]
   photoUrls: Record<string, string>
+  greetingUrls: Record<string, string>
   loadedAt: string
 }
 
@@ -195,7 +199,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       try {
         const [house, members, items, purchases, gifts, summary, estimates] = await Promise.all([
           supabase.from('households').select('id,name,monthly_budget_cents,version').eq('id', hh).single(),
-          supabase.from('household_members').select('user_id,display_name,role').eq('household_id', hh).order('joined_at'),
+          supabase.from('household_members').select('user_id,display_name,role,greeting_title,greeting_audio_path,greeting_pitch_up').eq('household_id', hh).order('joined_at'),
           supabase.from('item_overview').select('*').eq('household_id', hh).order('category').order('name'),
           supabase.from('purchases').select('*').eq('household_id', hh).order('purchased_on', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }),
           supabase.from('gifts').select('*').eq('household_id', hh).order('created_at', { ascending: false }),
@@ -205,16 +209,18 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         const failed = [house, members, items, purchases, gifts, summary, estimates].find((r) => r.error)
         if (failed?.error) throw failed.error
         const itemRows = items.data as Item[]
-        const photoUrls = await signPhotos(itemRows, photoCache.current)
+        const memberRows = members.data as Member[]
+        const [photoUrls, greetingUrls] = await Promise.all([signPhotos(itemRows, photoCache.current), signGreetings(memberRows)])
         const snap: Snapshot = {
           household: house.data as Household,
-          members: members.data as Member[],
+          members: memberRows,
           items: itemRows,
           purchases: purchases.data as Purchase[],
           gifts: gifts.data as Gift[],
           summary: summary.data as Summary,
           estimates: (estimates.data as Estimate[]) ?? [],
           photoUrls,
+          greetingUrls,
           loadedAt: new Date().toISOString(),
         }
         setData(snap)
@@ -298,12 +304,24 @@ async function signPhotos(items: Item[], cache: Record<string, { url: string; ex
   return out
 }
 
+async function signGreetings(members: Member[]) {
+  const paths = members.map((m) => m.greeting_audio_path).filter((p): p is string => !!p)
+  const out: Record<string, string> = {}
+  if (!paths.length) return out
+  const { data } = await supabase.storage.from('household-audio').createSignedUrls(paths, 60 * 60 * 6)
+  for (const m of members) {
+    const hit = data?.find((d) => d.path === m.greeting_audio_path)
+    if (hit?.signedUrl) out[m.user_id] = hit.signedUrl
+  }
+  return out
+}
+
 function readCache(userId: string): Snapshot | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    return parsed.userId === userId ? (parsed.snap as Snapshot) : null
+    return parsed.userId === userId ? ({ greetingUrls: {}, ...parsed.snap } as Snapshot) : null
   } catch {
     return null
   }

@@ -309,6 +309,22 @@ describe.skipIf(!run)('household backend', () => {
     ok(await sunny.c.from('items').update({ photo_path: path }).eq('id', diaperId))
   })
 
+  it('lets parents record each other\'s greeting but only rename themselves', async () => {
+    ok(await smita.c.from('household_members').update({ greeting_title: 'Ma' }).eq('user_id', smita.id))
+    const rename = await smita.c.from('household_members').update({ display_name: 'X' }).eq('user_id', sunny.id)
+    expect(rename.error).toBeTruthy()
+    const clip = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112])
+    const path = `${hh}/greeting/${uid()}.m4a`
+    ok(await smita.c.storage.from('household-audio').upload(path, clip, { contentType: 'audio/mp4' }))
+    ok(await smita.c.from('household_members').update({ greeting_audio_path: path }).eq('user_id', sunny.id))
+    const row = ok(await sunny.c.from('household_members').select('greeting_audio_path, greeting_title').eq('user_id', sunny.id).single()) as any
+    expect(row.greeting_audio_path).toBe(path)
+    expect(row.greeting_title).toBe('Baba')
+    expect((await outsider.c.storage.from('household-audio').createSignedUrl(path, 60)).error).toBeTruthy()
+    const outsiderEdit = await outsider.c.from('household_members').update({ greeting_audio_path: null }).eq('user_id', sunny.id).select()
+    expect(outsiderEdit.data ?? []).toHaveLength(0)
+  })
+
   it('archives items without erasing purchase history', async () => {
     const before = ok(await sunny.c.rpc('spending_summary', {})) as any
     const del = await sunny.c.from('items').delete().eq('id', diaperId).select()

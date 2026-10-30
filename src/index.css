@@ -342,10 +342,53 @@ details summary { font-weight: 800; cursor: pointer; padding: 4px 0; }
 .mascot.is-happy .mascot-body { animation: hop 0.7s cubic-bezier(0.3, 1.6, 0.5, 1) 2; }
 @keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px) scale(1.03); } }
 
+/* Liyana: idle life, taps, hearts */
+.mascot-tap { position: relative; border: 0; background: none; padding: 0; cursor: pointer; flex: none; display: inline-block; }
+.mascot-tap:active .mascot { transform: scale(0.94); }
+.mascot { transition: transform 0.15s ease; }
+.mascot:not(.is-happy) .mascot-body { animation: breathe 3.6s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-1.5px) rotate(-1.2deg); } 70% { transform: translateY(0.5px) rotate(1.2deg); } }
+.mascot-bow { transform-origin: 0 0; animation: bow 5s ease-in-out infinite; }
+@keyframes bow { 0%, 86%, 100% { transform: rotate(0); } 90% { transform: rotate(-14deg) scale(1.1); } 95% { transform: rotate(10deg); } }
+.heart-pop { position: absolute; bottom: 55%; color: #e98b8b; font-size: 18px; pointer-events: none; animation: heart-up 1.3s ease-out forwards; }
+@keyframes heart-up { 0% { opacity: 0; transform: translateY(0) scale(0.4); } 20% { opacity: 1; transform: translateY(-10px) scale(1.15); } 100% { opacity: 0; transform: translateY(-70px) scale(0.9) rotate(-12deg); } }
+
+/* Welcome greeting */
+.welcome { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  padding: calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 24px); text-align: center; cursor: pointer;
+  background: radial-gradient(circle at 50% 38%, #fde9dc 0%, var(--cream) 55%, #f3eefa 100%); animation: fade 0.4s ease both; }
+.welcome.leaving { animation: welcome-out 0.38s ease forwards; }
+@keyframes welcome-out { to { opacity: 0; transform: scale(1.04); } }
+.welcome-mascot { animation: pop-in 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) both 0.1s; }
+@keyframes pop-in { 0% { opacity: 0; transform: translateY(40px) scale(0.6); } 100% { opacity: 1; transform: none; } }
+.welcome-sparkles span { position: absolute; color: var(--lavender); font-size: 16px; opacity: 0; animation: twinkle 2.6s ease-in-out infinite; }
+.welcome-sparkles span:nth-child(3n) { color: var(--peach); font-size: 12px; }
+.welcome-sparkles span:nth-child(3n + 1) { color: var(--sage); }
+@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(0.5); } 50% { opacity: 0.9; transform: scale(1.2) rotate(20deg); } }
+.speech { position: relative; background: #fff; border-radius: 24px; padding: 14px 18px; box-shadow: var(--shadow); max-width: 340px; opacity: 0; transform: translateY(10px) scale(0.9); transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.speech::before { content: ''; position: absolute; top: -9px; left: 50%; margin-left: -10px; border: 10px solid transparent; border-top: 0; border-bottom-color: #fff; }
+.speech.show { opacity: 1; transform: none; }
+.speech-bn { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.5; font-family: 'Noto Sans Bengali', var(--body); }
+.speech-roman { margin: 4px 0 0; font-size: 14px; color: var(--ink-2); }
+.welcome-btn { max-width: 340px; animation: rise 0.5s ease both 0.6s; }
+.welcome-note { margin: 0; max-width: 320px; font-size: 14px; color: var(--ink-2); }
+.welcome-skip { position: absolute; top: calc(env(safe-area-inset-top) + 8px); right: 12px; }
+
+/* Greeting settings */
+.greet-member { background: var(--cream); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.greet-head { display: flex; flex-direction: column; gap: 6px; }
+.greet-line { margin: 0; font-size: 15px; color: var(--ink-2); }
+.greet-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.upload-audio { position: relative; overflow: hidden; }
+.upload-audio input { position: absolute; inset: 0; opacity: 0; }
+.toggle.small { min-height: 36px; font-size: 14px; }
+
 /* Reduced motion: from the iPhone setting or the in-app switch */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation: none !important; transition: none !important; }
 .reduce-motion .checkmark-circle, .reduce-motion .checkmark-check { stroke-dashoffset: 0; }
-.reduce-motion .confetti { display: none; }
+.reduce-motion .confetti, .reduce-motion .heart-pop, .reduce-motion .welcome-sparkles { display: none; }
+.reduce-motion .speech { opacity: 1; transform: none; }
+.reduce-motion .speech:not(.show) { opacity: 0; }
 
 @media (min-width: 560px) {
   .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

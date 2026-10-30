@@ -44,6 +44,10 @@ export const sound = {
   milestone() {
     ;[523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.11, 0.6, 0.035))
   },
+  // a soft, bubbly little giggle
+  giggle() {
+    ;[880, 1175, 988, 1319, 1175].forEach((f, i) => tone(f, i * 0.07, 0.12, 0.03, 'sine'))
+  },
   error() {
     tone(330, 0, 0.18, 0.03, 'triangle')
   },

@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { HouseholdProvider, useHousehold } from './lib/household'
+import { HouseholdProvider, useData, useHousehold } from './lib/household'
+import { setGreeting, type Greeting } from './lib/voice'
+import { Welcome, shouldGreet } from './components/Welcome'
 import { backendConfigured } from './lib/supabase'
 import { emit } from './lib/events'
 import { sound } from './lib/sound'
@@ -68,8 +70,23 @@ function Milestones() {
   return null
 }
 
+// Keep Liyana's greeting in sync with what she calls the signed-in parent.
+function useMyGreeting(): Greeting {
+  const { members, greetingUrls } = useData()
+  const { session } = useHousehold()
+  const me = members.find((m) => m.user_id === session?.user.id)
+  const title = me?.greeting_title ?? 'Baba'
+  const audioUrl = (me && greetingUrls[me.user_id]) ?? null
+  const pitchUp = me?.greeting_pitch_up ?? true
+  const g = useMemo(() => ({ title, audioUrl, pitchUp }), [title, audioUrl, pitchUp])
+  useEffect(() => setGreeting(g), [g])
+  return g
+}
+
 function Shell() {
   const loc = useLocation()
+  const [greeting, setGreetingOpen] = useState(shouldGreet)
+  const myGreeting = useMyGreeting()
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [loc.pathname])
@@ -96,6 +113,7 @@ function Shell() {
       </main>
       <BottomNav />
       <Milestones />
+      {greeting && <Welcome name="Liyana" greeting={myGreeting} onDone={() => setGreetingOpen(false)} />}
     </div>
   )
 }

@@ -1,14 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { onAppEvent } from '../lib/events'
 import { usePrefs } from '../lib/prefs'
+import { sound } from '../lib/sound'
+import { speakGreeting } from '../lib/voice'
 
 // Liyana: an original, symbolic cartoon (not a likeness). Warm brown hair, a tiny
 // lavender bow, peach outfit, friendly smile. Blinks, waves now and then, and
 // does a happy hop when something is saved.
-export function Mascot({ size = 96, mood: forcedMood, react = true }: { size?: number; mood?: 'happy' | 'idle'; react?: boolean }) {
+export function Mascot({ size = 96, mood: forcedMood, react = true, tappable = true, onTapped }: { size?: number; mood?: 'happy' | 'idle'; react?: boolean; tappable?: boolean; onTapped?: () => void }) {
   const { reduced } = usePrefs()
   const [happy, setHappy] = useState(false)
   const [waving, setWaving] = useState(false)
+  const [hearts, setHearts] = useState<number[]>([])
+  const happyTimer = useRef<number | undefined>(undefined)
+
+  // Tap Liyana: she says her greeting (or giggles if no voice is available).
+  async function tap() {
+    setHappy(true)
+    setWaving(true)
+    window.clearTimeout(happyTimer.current)
+    happyTimer.current = window.setTimeout(() => {
+      setHappy(false)
+      setWaving(false)
+    }, 1800)
+    const id = Date.now()
+    setHearts((h) => [...h.slice(-5), id])
+    window.setTimeout(() => setHearts((h) => h.filter((x) => x !== id)), 1400)
+    onTapped?.()
+    const r = await speakGreeting()
+    if (r === 'no-voice' || r === 'blocked') sound.giggle()
+  }
 
   useEffect(() => {
     if (!react) return
@@ -49,7 +70,7 @@ export function Mascot({ size = 96, mood: forcedMood, react = true }: { size?: n
   }, [reduced])
 
   const isHappy = forcedMood === 'happy' || happy
-  return (
+  const art = (
     <svg
       className={`mascot ${isHappy ? 'is-happy' : ''} ${waving ? 'is-waving' : ''}`}
       width={size}
@@ -79,9 +100,11 @@ export function Mascot({ size = 96, mood: forcedMood, react = true }: { size?: n
         <path d="M58 20c-2-6 3-10 7-8-4 1-5 4-3 8z" fill="#8A5636" />
         {/* bow */}
         <g transform="translate(76 25) rotate(18)">
+          <g className="mascot-bow">
           <path d="M0 0l-9-6v12z" fill="#C3B1E1" />
           <path d="M0 0l9-6v12z" fill="#C3B1E1" />
           <circle r="2.8" fill="#A994CF" />
+        </g>
         </g>
         {/* cheeks */}
         <ellipse cx="42" cy="62" rx="5.5" ry="3.6" fill="#F2A7A0" opacity=".55" />
@@ -104,5 +127,14 @@ export function Mascot({ size = 96, mood: forcedMood, react = true }: { size?: n
         <path d={isHappy ? 'M51 64q9 10 18 0z' : 'M52 65q8 6 16 0'} stroke="#B5615A" strokeWidth="2.4" fill={isHappy ? '#E9867E' : 'none'} strokeLinecap="round" strokeLinejoin="round" />
       </g>
     </svg>
+  )
+  if (!tappable) return art
+  return (
+    <button type="button" className="mascot-tap" onClick={tap} aria-label="Tap Liyana to hear her say hello" style={{ width: size, height: size }}>
+      {art}
+      {hearts.map((h, i) => (
+        <span key={h} className="heart-pop" style={{ left: `${30 + ((h + i * 23) % 40)}%` }} aria-hidden="true">♥</span>
+      ))}
+    </button>
   )
 }

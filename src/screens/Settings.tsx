@@ -8,6 +8,7 @@ import { download, itemsCsv, purchasesCsv } from '../lib/export'
 import { todayNY } from '../lib/format'
 import { emit } from '../lib/events'
 import { ErrorNote } from '../components/ui'
+import { GreetingSettings } from '../components/GreetingSettings'
 
 export function ExportButtons() {
   const d = useData()
@@ -212,6 +213,7 @@ export function SettingsScreen() {
     <div className="screen">
       <header className="screen-head"><h1>Settings</h1></header>
       <FamilySettings />
+      <GreetingSettings />
       <PushSettings />
       <div className="card form">
         <strong>Sound & motion (this phone)</strong>
